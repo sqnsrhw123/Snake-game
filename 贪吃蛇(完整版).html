@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>贪吃蛇</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#222;color:#fff;font-family:Arial;text-align:center;padding:20px}
+h1{margin:20px 0;color:#4CAF50}
+#canvas{border:2px solid #4CAF50;background:#000;margin:20px auto;display:block}
+.controls{margin:20px}
+.btn{background:#4CAF50;color:#fff;border:none;padding:12px 20px;margin:5px;border-radius:5px;font-size:16px;cursor:pointer}
+.dpad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:200px;margin:20px auto}
+.dpad button{width:60px;height:60px;border-radius:50%}
+.score{margin:15px;font-size:20px}
+</style>
+</head>
+<body>
+<h1>🐍 贪吃蛇</h1>
+<div class="score">得分: <span id="score">0</span></div>
+<canvas id="canvas"></canvas>
+<div class="controls">
+  <div class="dpad">
+    <div></div>
+    <button class="btn" onclick="changeDirection('up')">↑</button>
+    <div></div>
+    <button class="btn" onclick="changeDirection('left')">←</button>
+    <button class="btn" id="pauseBtn" onclick="pauseGame()">暂停</button>
+    <button class="btn" onclick="changeDirection('right')">→</button>
+    <div></div>
+    <button class="btn" onclick="changeDirection('down')">↓</button>
+    <div></div>
+  </div>
+  <button class="btn" onclick="startGame()">开始</button>
+  <button class="btn" onclick="restartGame()">重玩</button>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const pauseBtn = document.getElementById('pauseBtn');
+const size = 15;
+const cell = 20;
+let snake = [], food = {};
+let dir = 'right', nextDir = 'right';
+let score = 0, gameLoop, paused = false, gameStarted = false;
+
+function init(){
+  canvas.width = canvas.height = size * cell;
+  snake = [{x:5,y:7},{x:4,y:7},{x:3,y:7}];
+  newFood();
+  score = 0;
+  dir = nextDir = 'right';
+  paused = false;  // 重置暂停状态
+  pauseBtn.textContent = '暂停';  // 确保按钮显示为"暂停"
+  document.getElementById('score').textContent = score;
+  draw();
+}
+
+function draw(){
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // 画蛇
+  ctx.fillStyle = '#4CAF50';
+  snake.forEach((p,i) => {
+    ctx.fillRect(p.x*cell, p.y*cell, cell-1, cell-1);
+    if(i===0) ctx.fillStyle = '#8BC34A';
+  });
+  
+  // 画食物
+  ctx.fillStyle = '#f44336';
+  ctx.beginPath();
+  ctx.arc(food.x*cell+cell/2, food.y*cell+cell/2, cell/2-1, 0, Math.PI*2);
+  ctx.fill();
+}
+
+function update(){
+  if(paused || !gameStarted) return;
+  
+  dir = nextDir;
+  let head = {...snake[0]};
+  
+  if(dir==='up') head.y--;
+  if(dir==='down') head.y++;
+  if(dir==='left') head.x--;
+  if(dir==='right') head.x++;
+  
+  if(head.x<0||head.x>=size||head.y<0||head.y>=size) return end();
+  
+  for(let s of snake) if(s.x===head.x&&s.y===head.y) return end();
+  
+  snake.unshift(head);
+  
+  if(head.x===food.x && head.y===food.y){
+    score += 10;
+    document.getElementById('score').textContent = score;
+    newFood();
+  } else {
+    snake.pop();
+  }
+  
+  draw();
+}
+
+function newFood(){
+  food = {x:Math.floor(Math.random()*size), y:Math.floor(Math.random()*size)};
+  for(let s of snake) if(s.x===food.x&&s.y===food.y) newFood();
+}
+
+function changeDirection(d){
+  if((d==='up'&&dir!=='down')||(d==='down'&&dir!=='up')||
+     (d==='left'&&dir!=='right')||(d==='right'&&dir!=='left')) nextDir = d;
+}
+
+function startGame(){
+  if(!gameStarted){
+    gameStarted = true;
+    init();
+    clearInterval(gameLoop);
+    // 将速度从200改为250毫秒
+    gameLoop = setInterval(update, 250);
+  }
+}
+
+function pauseGame(){
+  if(!gameStarted) return;  // 如果游戏没开始，不执行暂停操作
+  paused = !paused;
+  pauseBtn.textContent = paused ? '继续' : '暂停';
+}
+
+function restartGame(){
+  gameStarted = false;
+  clearInterval(gameLoop);
+  init();
+}
+
+function end(){
+  clearInterval(gameLoop);
+  alert(`游戏结束！得分：${score}`);
+  restartGame();
+}
+
+document.addEventListener('keydown', e => {
+  if(e.key==='ArrowUp') changeDirection('up');
+  if(e.key==='ArrowDown') changeDirection('down');
+  if(e.key==='ArrowLeft') changeDirection('left');
+  if(e.key==='ArrowRight') changeDirection('right');
+  if(e.key===' ') pauseGame();
+  if(e.key==='r'||e.key==='R') restartGame();
+});
+
+// 初始化
+init();
+</script>
+</body>
+</html>
